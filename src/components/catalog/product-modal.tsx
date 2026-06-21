@@ -1,0 +1,323 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { gsap } from "gsap";
+import { X, Plus, Minus, MessageCircle, Bell, Sparkles } from "lucide-react";
+import { Perfume } from "@/types/database";
+import { formatGs, precioEfectivo, buildWhatsAppUrl } from "@/lib/format";
+import { useCart } from "@/hooks/use-cart";
+import { NoteIcon } from "./note-icon";
+
+interface ProductModalProps {
+  perfume: Perfume | null;
+  onClose: () => void;
+}
+
+const WHATSAPP_NUMBER = "595982064334";
+
+type Capa = keyof Perfume["notas_olfativas"];
+const CAPAS: { key: Capa; label: string; descripcion: string }[] = [
+  { key: "salida", label: "Salida", descripcion: "Las primeras impresiones, efímeras y luminosas." },
+  { key: "corazon", label: "Corazón", descripcion: "El alma de la fragancia, donde vive su carácter." },
+  { key: "fondo", label: "Fondo", descripcion: "El rastro que perdura, cálido y memorable." },
+];
+
+/**
+ * Vista cinemática inmersiva del producto.
+ * - Entrada con timeline GSAP (envoltura + imagen + texto + notas en stagger).
+ * - Desglose de notas olfativas en 3 capas con iconos minimalistas.
+ * - CTA WhatsApp directo + agregar al carrito.
+ * - Estado "Agotado" sofisticado con solicitud de reingreso.
+ */
+export function ProductModal({ perfume, onClose }: ProductModalProps) {
+  const { agregar } = useCart();
+  const [cantidad, setCantidad] = useState(1);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const notasRef = useRef<HTMLDivElement>(null);
+
+  const agotado = perfume ? perfume.stock_disponible <= 0 : false;
+  const enOferta =
+    perfume && perfume.en_oferta && perfume.precio_descuento != null;
+
+  // Reset cantidad al cambiar de producto
+  useEffect(() => {
+    setCantidad(1);
+  }, [perfume?.id]);
+
+  // Bloquear scroll del body cuando abre
+  useEffect(() => {
+    if (!perfume) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [perfume]);
+
+  // Timeline GSAP de entrada
+  useEffect(() => {
+    if (!perfume || !innerRef.current) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) return;
+
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      tl.from(".modal-veil", { opacity: 0, duration: 0.4 })
+        .from(".modal-image", { scale: 1.1, opacity: 0, duration: 1 }, "-=0.2")
+        .from(
+          ".modal-eyebrow",
+          { y: 20, opacity: 0, duration: 0.6 },
+          "-=0.7"
+        )
+        .from(".modal-title", { y: 30, opacity: 0, duration: 0.7 }, "-=0.5")
+        .from(".modal-desc", { y: 20, opacity: 0, duration: 0.6 }, "-=0.5")
+        .from(
+          ".modal-price",
+          { y: 20, opacity: 0, duration: 0.6 },
+          "-=0.4"
+        )
+        .from(
+          ".modal-cta",
+          { y: 20, opacity: 0, duration: 0.6, stagger: 0.1 },
+          "-=0.4"
+        );
+
+      // Notas olfativas: aparecen en stagger por capa
+      if (notasRef.current) {
+        tl.from(
+          ".nota-capa",
+          { y: 30, opacity: 0, duration: 0.7, stagger: 0.18 },
+          "-=0.3"
+        ).from(
+          ".nota-chip",
+          { y: 14, opacity: 0, duration: 0.4, stagger: 0.04 },
+          "-=0.4"
+        );
+      }
+    }, rootRef);
+
+    return () => { ctx.revert(); };
+  }, [perfume]);
+
+  // ESC para cerrar
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  if (!perfume) return null;
+
+  const precio = precioEfectivo(perfume);
+
+  return (
+    <div
+      ref={rootRef}
+      className="fixed inset-0 z-[80] flex items-center justify-center overflow-y-auto"
+      role="dialog"
+      aria-modal="true"
+      aria-label={perfume.nombre}
+    >
+      {/* Velo */}
+      <div
+        className="modal-veil absolute inset-0 bg-obsidian/92 backdrop-blur-xl"
+        onClick={onClose}
+      />
+
+      {/* Contenedor */}
+      <div
+        ref={innerRef}
+        className="relative z-10 my-8 w-full max-w-5xl px-4"
+      >
+        <div className="glass-luxe overflow-hidden rounded-sm md:grid md:grid-cols-2">
+          {/* Imagen */}
+          <div className="relative aspect-[3/4] md:aspect-auto md:min-h-[600px]">
+            <Image
+              src={perfume.url_imagen}
+              alt={perfume.nombre}
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="modal-image object-cover"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-obsidian/70 via-transparent to-transparent" />
+
+            {/* Sello de oferta */}
+            {enOferta && (
+              <div className="absolute left-5 top-5">
+                <div className="seal-offer">
+                  <span className="flex flex-col items-center leading-none">
+                    <span className="font-semibold text-[0.8rem]">
+                      {perfume.porcentaje_descuento}%
+                    </span>
+                    <span className="text-[0.5rem] tracking-widest">OFF</span>
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Marca */}
+            <div className="absolute right-5 top-5 border border-gold/20 bg-obsidian/70 px-3 py-1.5 text-[0.6rem] uppercase tracking-regal text-ivory/80 backdrop-blur-sm">
+              {perfume.marca}
+            </div>
+          </div>
+
+          {/* Detalle */}
+          <div className="flex flex-col p-8 md:p-12">
+            <div className="flex items-start justify-between">
+              <p className="modal-eyebrow eyebrow">
+                {perfume.categoria.join(" · ")}
+              </p>
+              <button
+                onClick={onClose}
+                className="text-ivory/50 transition-colors hover:text-gold-champagne"
+                aria-label="Cerrar"
+              >
+                <X className="h-5 w-5" strokeWidth={1.25} />
+              </button>
+            </div>
+
+            <h2 className="modal-title mt-4 font-display text-4xl leading-tight text-ivory md:text-5xl">
+              {perfume.nombre}
+            </h2>
+            <p className="modal-desc mt-5 text-sm leading-relaxed text-ivory/60">
+              {perfume.descripcion}
+            </p>
+
+            {/* Volumen + stock */}
+            <div className="mt-5 flex items-center gap-4 text-[0.65rem] uppercase tracking-regal text-ivory/40">
+              <span>{perfume.volumen_ml} ml</span>
+              <span className="h-3 w-px bg-gold/20" />
+              <span>
+                {agotado
+                  ? "Agotado temporalmente"
+                  : `${perfume.stock_disponible} unidades disponibles`}
+              </span>
+            </div>
+
+            {/* Precio */}
+            <div className="modal-price mt-6 flex items-end gap-4">
+              {enOferta && (
+                <span className="price-strike">
+                  {formatGs(perfume.precio_regular)}
+                </span>
+              )}
+              <span className="font-display text-4xl text-gold-gradient">
+                {formatGs(precio)}
+              </span>
+              {enOferta && (
+                <span className="mb-2 flex items-center gap-1 text-[0.6rem] uppercase tracking-regal text-gold/70">
+                  <Sparkles className="h-3 w-3" /> Oferta exclusiva
+                </span>
+              )}
+            </div>
+
+            {/* Selector cantidad + CTA */}
+            {!agotado && (
+              <div className="modal-cta mt-8 flex flex-wrap items-center gap-4">
+                <div className="flex items-center gap-1 rounded-full border border-gold/20 p-1">
+                  <button
+                    onClick={() => setCantidad((c) => Math.max(1, c - 1))}
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-ivory/70 transition-colors hover:bg-gold/10 hover:text-gold-champagne"
+                    aria-label="Restar"
+                  >
+                    <Minus className="h-3.5 w-3.5" />
+                  </button>
+                  <span className="w-8 text-center text-sm text-ivory">
+                    {cantidad}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setCantidad((c) => Math.min(perfume.stock_disponible, c + 1))
+                    }
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-ivory/70 transition-colors hover:bg-gold/10 hover:text-gold-champagne"
+                    aria-label="Sumar"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => {
+                    agregar(perfume, cantidad);
+                    onClose();
+                  }}
+                  className="btn-luxe flex-1 !text-[0.65rem]"
+                >
+                  Agregar al carrito
+                </button>
+              </div>
+            )}
+
+            {/* CTA WhatsApp directo */}
+            {!agotado ? (
+              <a
+                href={buildWhatsAppUrl(perfume.nombre, WHATSAPP_NUMBER)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="modal-cta mt-3 flex items-center justify-center gap-2 rounded-full border border-[#25D366]/30 py-3 text-[0.65rem] uppercase tracking-regal text-[#25D366] transition-all hover:border-[#25D366] hover:bg-[#25D366]/5 hover:shadow-[0_0_24px_-6px_rgba(37,211,102,0.6)]"
+              >
+                <MessageCircle className="h-4 w-4" strokeWidth={1.5} />
+                Pedir ahora por WhatsApp
+              </a>
+            ) : (
+              <a
+                href={buildWhatsAppUrl(
+                  `${perfume.nombre} (solicito aviso de reingreso)`,
+                  WHATSAPP_NUMBER
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="modal-cta mt-3 flex items-center justify-center gap-2 rounded-full border border-gold/20 py-3 text-[0.62rem] uppercase tracking-regal text-ivory/55 transition-all hover:border-gold/50 hover:text-gold-champagne"
+              >
+                <Bell className="h-4 w-4" strokeWidth={1.5} />
+                Solicitar notificación de reingreso
+              </a>
+            )}
+
+            {/* Notas olfativas — desglose cinemático en 3 capas */}
+            <div ref={notasRef} className="mt-10 border-t border-gold/10 pt-8">
+              <h3 className="eyebrow mb-6">Pirámide olfativa</h3>
+              <div className="space-y-6">
+                {CAPAS.map((capa) => {
+                  const notas = perfume.notas_olfativas[capa.key] ?? [];
+                  return (
+                    <div key={capa.key} className="nota-capa">
+                      <div className="mb-3 flex items-baseline gap-3">
+                        <span className="font-lapidary text-sm tracking-regal text-gold">
+                          {capa.label}
+                        </span>
+                        <span className="h-px flex-1 bg-gold/10" />
+                        <span className="text-[0.6rem] italic text-ivory/35">
+                          {capa.descripcion}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {notas.map((n, i) => (
+                          <span
+                            key={`${n}-${i}`}
+                            className="nota-chip group flex items-center gap-2 rounded-full border border-gold/15 bg-ivory/[0.02] px-3 py-1.5 text-xs text-ivory/70 transition-all hover:border-gold/40 hover:text-gold-champagne"
+                          >
+                            <NoteIcon
+                              nota={n}
+                              className="h-4 w-4 text-gold/70"
+                            />
+                            {n}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

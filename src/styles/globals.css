@@ -1,0 +1,491 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================================
+   SULTAN OUD ELIXIR · Sistema de diseño de ultra-lujo
+   Paleta específica del brief: oro árabe sobre obsidiana (#050505).
+   No son defaults genéricos — cada token responde al mundo del oud.
+   ============================================================================ */
+
+:root {
+  /* Color base absoluto — negro profundo premium */
+  --obsidian: #050505;
+  --ebony: #0c0a08;
+  --coal: #0a0908;
+  --smoke: #1a1714;
+
+  /* Oro — la única familia cromática de acento */
+  --gold: #d4af37;
+  --gold-light: #e8c766;
+  --gold-champagne: #f4e088;
+  --gold-dark: #8b6f1e;
+  --gold-deep: #6b5418;
+
+  /* Marfil / perlado para texto sobre oscuro */
+  --ivory: #f5efe0;
+  --pearl: #eae3d2;
+
+  /* Bordes y vidrios */
+  --glass: rgba(245, 239, 224, 0.04);
+  --glass-border: rgba(212, 175, 55, 0.18);
+  --glass-border-hover: rgba(212, 175, 55, 0.55);
+}
+
+/* ----------------------------------------------------------------------------
+   Base tipográfica
+   ---------------------------------------------------------------------------- */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    background-color: var(--obsidian);
+  }
+
+  body {
+    background-color: var(--obsidian);
+    color: var(--ivory);
+    font-feature-settings: "liga" 1, "kern" 1, "ss01" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: rgba(212, 175, 55, 0.3);
+    color: var(--ivory);
+  }
+
+  /* Scrollbar minimalista en oro tenue */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #000;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--gold-dark), var(--gold-deep));
+    border-radius: 8px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--gold);
+  }
+
+  /* Cursor premium — el sistema custom lo reemplaza con físicas líquidas */
+  @media (pointer: fine) {
+    body {
+      cursor: none;
+    }
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   Componentes de marca
+   ---------------------------------------------------------------------------- */
+@layer components {
+  /* Texto con brillo dorado animado — identidad "ELIXIR" */
+  .text-elixir-shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--gold-deep) 0%,
+      var(--gold) 25%,
+      var(--ivory) 50%,
+      var(--gold) 75%,
+      var(--gold-deep) 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: elixir-shimmer 5s linear infinite;
+    font-style: italic;
+  }
+
+  .text-gold-gradient {
+    background: linear-gradient(
+      90deg,
+      var(--gold-dark),
+      var(--gold-light),
+      var(--gold-dark)
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: elixir-shimmer 6s linear infinite;
+  }
+
+  /* Tarjeta de vidrio con borde dorado tenue — la base del catálogo */
+  .glass-luxe {
+    background: var(--glass);
+    backdrop-filter: blur(14px) saturate(120%);
+    -webkit-backdrop-filter: blur(14px) saturate(120%);
+    border: 1px solid var(--glass-border);
+    position: relative;
+    transition: border-color 0.5s ease, transform 0.5s ease,
+      box-shadow 0.5s ease;
+  }
+
+  .glass-luxe::before {
+    /* Brillo dorado interno que aparece en hover */
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1px transparent;
+    transition: box-shadow 0.5s ease;
+    pointer-events: none;
+  }
+
+  .glass-luxe:hover {
+    border-color: var(--glass-border-hover);
+    transform: translateY(-6px);
+    box-shadow: 0 30px 60px -20px rgba(212, 175, 55, 0.25);
+  }
+  .glass-luxe:hover::before {
+    box-shadow: inset 0 0 0 1px rgba(212, 175, 55, 0.4);
+  }
+
+  /* Botón principal de lujo — llenado asimétrico magnético */
+  .btn-luxe {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(120deg, var(--gold-dark), var(--gold) 50%, var(--gold-light));
+    color: #0a0908;
+    padding: 1rem 2.5rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    transition: color 0.4s ease, transform 0.3s ease, box-shadow 0.4s ease;
+    box-shadow: 0 0 30px -8px rgba(212, 175, 55, 0.45);
+    isolation: isolate;
+  }
+
+  .btn-luxe::after {
+    /* Capa oscura que se llena desde la izquierda en hover */
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: #0a0908;
+    transform: scaleX(0);
+    transform-origin: right center;
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    z-index: -1;
+  }
+
+  .btn-luxe:hover {
+    color: var(--gold);
+    box-shadow: 0 0 0 1px var(--gold), 0 0 40px -5px rgba(212, 175, 55, 0.6);
+  }
+  .btn-luxe:hover::after {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+  .btn-luxe:active {
+    transform: scale(0.98);
+  }
+
+  /* Botón fantasma con borde de luz dorada líquida */
+  .btn-ghost-luxe {
+    position: relative;
+    padding: 0.85rem 2rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    color: var(--ivory);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    transition: all 0.4s ease;
+    background: transparent;
+    overflow: hidden;
+  }
+  .btn-ghost-luxe:hover {
+    border-color: var(--gold);
+    color: var(--gold-champagne);
+    box-shadow: 0 0 24px -6px rgba(212, 175, 55, 0.5);
+  }
+
+  /* Etiqueta / eyebrow con divisor */
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--gold);
+    font-size: 0.65rem;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+  }
+  .eyebrow::before,
+  .eyebrow::after {
+    content: "";
+    width: 28px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-dark));
+  }
+  .eyebrow::after {
+    background: linear-gradient(90deg, var(--gold-dark), transparent);
+  }
+
+  /* Línea separadora dorada */
+  .gold-rule {
+    height: 1px;
+    width: 64px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+
+  /* Sello dorado minimalista — micro-sello animado de oferta */
+  .seal-offer {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    border: 1px solid var(--gold);
+    color: var(--gold-champagne);
+    font-family: var(--font-cinzel), serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.05em;
+    background: rgba(212, 175, 55, 0.05);
+    backdrop-filter: blur(4px);
+    animation: seal-rotate 12s linear infinite;
+    position: relative;
+  }
+  .seal-offer::before {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: 9999px;
+    border: 1px dashed rgba(212, 175, 55, 0.3);
+    animation: seal-rotate-rev 18s linear infinite;
+  }
+
+  /* Precio tachado elegante (línea fina, no chillona) */
+  .price-strike {
+    position: relative;
+    color: rgba(234, 227, 210, 0.35);
+    font-size: 0.85rem;
+  }
+  .price-strike::after {
+    content: "";
+    position: absolute;
+    left: -2px;
+    right: -2px;
+    top: 52%;
+    height: 1px;
+    background: rgba(212, 175, 55, 0.7);
+    transform: rotate(-8deg);
+  }
+
+  /* Botón social premium con drop-shadow dinámico */
+  .social-luxe {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    border: 1px solid rgba(212, 175, 55, 0.18);
+    background: rgba(245, 239, 224, 0.03);
+    color: var(--ivory);
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.4s ease, border-color 0.4s ease;
+  }
+  .social-luxe:hover {
+    transform: translateY(-4px);
+  }
+  .social-luxe.is-whatsapp:hover {
+    color: #25d366;
+    border-color: #25d366;
+    box-shadow: 0 0 28px -4px rgba(37, 211, 102, 0.7);
+  }
+  .social-luxe.is-instagram:hover {
+    color: #e1306c;
+    border-color: #e1306c;
+    box-shadow: 0 0 28px -4px rgba(225, 48, 108, 0.7);
+  }
+  .social-luxe.is-facebook:hover {
+    color: #4f86f7;
+    border-color: #4f86f7;
+    box-shadow: 0 0 28px -4px rgba(79, 134, 247, 0.7);
+  }
+
+  /* Botón "Agotado temporalmente" — estado sofisticado */
+  .btn-soldout {
+    padding: 0.85rem 1.5rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(234, 227, 210, 0.15);
+    color: rgba(234, 227, 210, 0.55);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-size: 0.62rem;
+    cursor: not-allowed;
+    background: rgba(245, 239, 224, 0.02);
+    transition: opacity 0.5s ease;
+  }
+
+  /* Campo de formulario premium */
+  .field-luxe {
+    width: 100%;
+    background: rgba(245, 239, 224, 0.03);
+    border: none;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.25);
+    color: var(--ivory);
+    padding: 0.85rem 0.25rem;
+    font-size: 0.9rem;
+    transition: border-color 0.3s ease;
+  }
+  .field-luxe::placeholder {
+    color: rgba(234, 227, 210, 0.35);
+  }
+  .field-luxe:focus {
+    outline: none;
+    border-bottom-color: var(--gold);
+  }
+
+  /* Botón de filtro de catálogo */
+  .filter-pill {
+    padding: 0.5rem 1.25rem;
+    border: 1px solid rgba(234, 227, 210, 0.15);
+    border-radius: 9999px;
+    color: rgba(234, 227, 210, 0.6);
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    transition: all 0.35s ease;
+    white-space: nowrap;
+  }
+  .filter-pill:hover {
+    color: var(--gold-champagne);
+    border-color: rgba(212, 175, 55, 0.5);
+  }
+  .filter-pill.is-active {
+    background: linear-gradient(120deg, var(--gold-dark), var(--gold));
+    color: #0a0908;
+    border-color: var(--gold);
+    box-shadow: 0 0 20px -6px rgba(212, 175, 55, 0.7);
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   Utilidades
+   ---------------------------------------------------------------------------- */
+@layer utilities {
+  .bg-radial-gold {
+    background: radial-gradient(
+      ellipse at center,
+      rgba(212, 175, 55, 0.08) 0%,
+      transparent 60%
+    );
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .mask-fade-r {
+    -webkit-mask-image: linear-gradient(90deg, #000 80%, transparent);
+    mask-image: linear-gradient(90deg, #000 80%, transparent);
+  }
+
+  /* Respeto estricto a reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   Keyframes de marca
+   ---------------------------------------------------------------------------- */
+@keyframes elixir-shimmer {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes seal-rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes seal-rotate-rev {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes loader-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes twinkle-soft {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+/* Cursor personalizado — dos elementos: núcleo + halo líquido */
+.cursor-core {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--gold-light);
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: screen;
+  transition: transform 0.08s ease;
+}
+
+.cursor-halo {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 9999px;
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  pointer-events: none;
+  z-index: 9998;
+  mix-blend-mode: screen;
+}
+
+@media (pointer: coarse) {
+  .cursor-core,
+  .cursor-halo {
+    display: none;
+  }
+}
