@@ -1,16 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X, MessageCircle, ShoppingBag, Tag, Check } from "lucide-react";
 import { useCart } from "@/hooks/use-cart";
 import { formatGs } from "@/lib/format";
 import { buildWhatsAppCheckoutUrl } from "@/lib/format";
 import {
   DeliveryProfile,
-  DeliveryData,
 } from "@/components/cart/delivery-profile";
-
-const WHATSAPP_NUMBER = "595982064334";
+import { useDeliveryProfile } from "@/hooks/use-delivery-profile";
+import { WHATSAPP_NUMBER } from "@/data/site-config";
 
 interface CheckoutModalProps {
   abierto: boolean;
@@ -20,23 +19,32 @@ interface CheckoutModalProps {
 /**
  * Modal de checkout.
  * - Permite aplicar cupón.
- * - Permite completar (opcionalmente) datos de delivery.
- * - El botón principal abre WhatsApp con el pedido completo hacia 595982064334.
- * - "Continuar comprando" cierra el modal sin vaciar el carrito.
+ * - Permite completar (opcionalmente) datos de delivery — persisten entre sesiones.
+ * - El botón principal abre WhatsApp con el pedido completo y VACÍA el carrito.
+ * - Pantalla de confirmación con resumen del total enviado.
+ * - Avisa al botón flotante de WhatsApp para que se oculte mientras esté abierto.
  */
 export function CheckoutModal({ abierto, onClose }: CheckoutModalProps) {
   const { items, subtotal, descuento, total, aplicarCodigo, quitarCupon, cuponAplicado, estadoCupon, vaciar } =
     useCart();
+  const { perfil: delivery } = useDeliveryProfile();
 
   const [codigo, setCodigo] = useState("");
-  const [delivery, setDelivery] = useState<DeliveryData>({
-    whatsapp: "",
-    nombre: "",
-    ciudad: "",
-    direccion: "",
-    indicaciones: "",
-  });
   const [confirmado, setConfirmado] = useState(false);
+  const [totalEnviado, setTotalEnviado] = useState(0);
+
+  // Avisar al botón de WhatsApp cuando el modal esté abierto
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("sultan:checkout-modal", { detail: abierto })
+    );
+    if (!abierto) return;
+    return () => {
+      window.dispatchEvent(
+        new CustomEvent("sultan:checkout-modal", { detail: false })
+      );
+    };
+  }, [abierto]);
 
   if (!abierto) return null;
 
@@ -51,18 +59,16 @@ export function CheckoutModal({ abierto, onClose }: CheckoutModalProps) {
       ciudad: delivery.ciudad,
       direccion: delivery.direccion,
     });
+    // Guardamos el total antes de vaciar para mostrarlo en la confirmación
+    setTotalEnviado(total);
     window.open(url, "_blank", "noopener,noreferrer");
+    // Vaciamos el carrito automáticamente tras el pedido
+    vaciar();
+    setCodigo("");
     setConfirmado(true);
   };
 
   const continuarComprando = () => {
-    setConfirmado(false);
-    onClose();
-    // El carrito se conserva intencionalmente.
-  };
-
-  const finalizarYLimpiar = () => {
-    vaciar();
     setConfirmado(false);
     onClose();
   };
@@ -105,8 +111,9 @@ export function CheckoutModal({ abierto, onClose }: CheckoutModalProps) {
                 <Check className="h-7 w-7" strokeWidth={1.5} />
               </div>
               <p className="mx-auto max-w-sm text-sm leading-relaxed text-ivory/80">
-                Abrimos WhatsApp con tu pedido listo para enviar. Nuestro
-                asesor coordinará la entrega y el pago al recibir.
+                Abrimos WhatsApp con tu pedido listo para enviar. Tu carrito
+                ya quedó vacío. Nuestro asesor coordinará la entrega y el
+                pago al recibir.
               </p>
 
               <div className="mt-6 rounded-sm border border-gold/20 bg-gold/[0.04] p-4">
@@ -114,27 +121,19 @@ export function CheckoutModal({ abierto, onClose }: CheckoutModalProps) {
                   Total a pagar al recibir
                 </p>
                 <p className="mt-1 font-display text-3xl text-gold-gradient">
-                  {formatGs(total)}
+                  {formatGs(totalEnviado)}
                 </p>
               </div>
 
-              <div className="mt-7 flex flex-col gap-3">
-                <button
-                  onClick={continuarComprando}
-                  className="btn-luxe w-full"
-                >
-                  <span className="inline-flex items-center justify-center gap-2">
-                    <ShoppingBag className="h-4 w-4" strokeWidth={1.5} />
-                    Continuar comprando
-                  </span>
-                </button>
-                <button
-                  onClick={finalizarYLimpiar}
-                  className="text-[0.65rem] uppercase tracking-regal text-ivory/50 transition-colors hover:text-ivory/80"
-                >
-                  Vaciar carrito y cerrar
-                </button>
-              </div>
+              <button
+                onClick={continuarComprando}
+                className="btn-luxe mt-7 w-full"
+              >
+                <span className="inline-flex items-center justify-center gap-2">
+                  <ShoppingBag className="h-4 w-4" strokeWidth={1.5} />
+                  Seguir explorando
+                </span>
+              </button>
             </div>
           ) : (
             /* ---------- Pantalla de checkout ---------- */
@@ -203,7 +202,7 @@ export function CheckoutModal({ abierto, onClose }: CheckoutModalProps) {
 
               {/* Perfil delivery */}
               <div className="mb-5">
-                <DeliveryProfile value={delivery} onChange={setDelivery} />
+                <DeliveryProfile />
               </div>
 
               {/* Totales */}

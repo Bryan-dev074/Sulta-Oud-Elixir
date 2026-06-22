@@ -2,36 +2,28 @@
 
 import { useState } from "react";
 import { Info, EyeOff } from "lucide-react";
+import { useDeliveryProfile } from "@/hooks/use-delivery-profile";
 
-export interface DeliveryData {
-  whatsapp: string;
-  nombre: string;
-  ciudad: string;
-  direccion: string;
-  indicaciones: string;
-}
-
-interface DeliveryProfileProps {
-  value: DeliveryData;
-  onChange: (d: DeliveryData) => void;
-}
+export type DeliveryData = import("@/hooks/use-delivery-profile").DeliveryProfileData;
 
 /**
  * Perfil opcional de delivery.
  * Acelera el pedido en Paraguay sin ser obligatorio.
+ * Se persiste automáticamente en localStorage (no hay que rellenar de nuevo).
  * Incluye tooltip animado de lujo que explica la discreción del paquete.
  */
-export function DeliveryProfile({ value, onChange }: DeliveryProfileProps) {
+export function DeliveryProfile() {
+  const { perfil: value, actualizar } = useDeliveryProfile();
   const [tooltipOpen, setTooltipOpen] = useState(false);
   const set = <K extends keyof DeliveryData>(k: K, v: DeliveryData[K]) =>
-    onChange({ ...value, [k]: v });
+    actualizar({ [k]: v });
 
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3">
         <p className="eyebrow !justify-start">Datos de entrega (opcional)</p>
         <span className="text-[0.55rem] uppercase tracking-regal text-ivory/30">
-          Acelera tu próximo pedido
+          Se guardan para tu próximo pedido
         </span>
       </div>
 

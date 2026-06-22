@@ -1,13 +1,19 @@
 "use client";
 
 import { Instagram, Facebook, MessageCircle } from "lucide-react";
-
-const WHATSAPP_URL = "https://wa.me/595982064334";
+import { REDES_SOCIALES } from "@/data/site-config";
 
 /**
  * Footer premium con iconografía de élite.
- * Redes sociales con drop-shadow dinámico y glow atenuado en hover.
+ * Las redes sociales se configuran en `src/data/site-config.ts`.
  */
+
+const ICONOS: Record<string, React.ElementType> = {
+  instagram: Instagram,
+  facebook: Facebook,
+  whatsapp: MessageCircle,
+};
+
 export function Footer() {
   return (
     <footer
@@ -78,29 +84,21 @@ export function Footer() {
 
           {/* Redes sociales premium */}
           <div className="flex items-center gap-4">
-            <a
-              href="#"
-              aria-label="Instagram"
-              className="social-luxe is-instagram"
-            >
-              <Instagram className="h-5 w-5" strokeWidth={1.25} />
-            </a>
-            <a
-              href="#"
-              aria-label="Facebook"
-              className="social-luxe is-facebook"
-            >
-              <Facebook className="h-5 w-5" strokeWidth={1.25} />
-            </a>
-            <a
-              href={WHATSAPP_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="WhatsApp"
-              className="social-luxe is-whatsapp"
-            >
-              <MessageCircle className="h-5 w-5" strokeWidth={1.25} />
-            </a>
+            {REDES_SOCIALES.map((red) => {
+              const Icono = ICONOS[red.tipo];
+              return (
+                <a
+                  key={red.tipo}
+                  href={red.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={red.label}
+                  className={`social-luxe is-${red.tipo}`}
+                >
+                  <Icono className="h-5 w-5" strokeWidth={1.25} />
+                </a>
+              );
+            })}
           </div>
 
           <div className="text-center md:text-right">

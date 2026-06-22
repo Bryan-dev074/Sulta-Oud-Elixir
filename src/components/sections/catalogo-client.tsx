@@ -1,36 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import { Perfume } from "@/types/database";
 import { Favoritos } from "@/components/sections/favoritos";
 import { Catalogo } from "@/components/sections/catalogo";
-import { ProductModal } from "@/components/catalog/product-modal";
-
-interface CatalogoClientProps {
-  perfumes: Perfume[];
-}
+import { useCatalog } from "@/hooks/use-catalog";
 
 /**
- * Orquestador cliente de Favoritos + Catálogo + Modal de detalle.
- * Mantiene un único modal de producto activo para toda la home,
- * y conecta la búsqueda del navbar con el catálogo.
+ * Orquestador cliente de Favoritos + Catálogo.
+ * - Lee los perfumes y el detalle del contexto global (<CatalogProvider>).
+ * - El modal de detalle vive en el layout (compartido con el Navbar).
  */
-export function CatalogoClient({ perfumes }: CatalogoClientProps) {
-  const [detalle, setDetalle] = useState<Perfume | null>(null);
+export function CatalogoClient() {
+  const { perfumes, abrirDetalle } = useCatalog();
   const [query, setQuery] = useState("");
 
   const destacados = perfumes.filter((p) => p.destacado).slice(0, 6);
 
   return (
     <>
-      <Favoritos perfumes={destacados} onAbrirDetalle={setDetalle} />
+      <Favoritos perfumes={destacados} onAbrirDetalle={abrirDetalle} />
       <Catalogo
         perfumes={perfumes}
         query={query}
         onQueryChange={setQuery}
-        onAbrirDetalle={setDetalle}
+        onAbrirDetalle={abrirDetalle}
       />
-      <ProductModal perfume={detalle} onClose={() => setDetalle(null)} />
     </>
   );
 }

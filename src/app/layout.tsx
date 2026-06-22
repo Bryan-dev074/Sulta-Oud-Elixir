@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import { Cinzel, Cormorant_Garamond, Jost } from "next/font/google";
 import "@/styles/globals.css";
 import { CartProvider } from "@/hooks/use-cart";
+import { CatalogProvider } from "@/hooks/use-catalog";
 import { ParticleField } from "@/components/three/particle-field";
 import { LiquidCursor } from "@/components/ui/liquid-cursor";
 import { Loader } from "@/components/ui/loader";
-import { Navbar } from "@/components/layout/navbar";
+import { Chrome } from "@/components/layout/chrome";
 import { Footer } from "@/components/layout/footer";
 import { CartSidebar } from "@/components/cart/cart-sidebar";
+import { WhatsAppButton } from "@/components/ui/whatsapp-button";
 
 const cinzel = Cinzel({
   subsets: ["latin"],
@@ -55,6 +57,13 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://sultan-oud-next.vercel.app"),
 };
 
+/**
+ * Capa de chrome (navbar + modal global) — Client Component.
+ */
+function ChromeWrapper() {
+  return <Chrome />;
+}
+
 export default function RootLayout({
   children,
 }: {
@@ -67,19 +76,24 @@ export default function RootLayout({
     >
       <body className="font-sans antialiased">
         <CartProvider>
-          {/* Fondo 3D orgánico fijo */}
-          <ParticleField />
-          {/* Cursor premium con físicas líquidas */}
-          <LiquidCursor />
+          <CatalogProvider>
+            {/* Fondo 3D orgánico fijo */}
+            <ParticleField />
+            {/* Cursor premium con físicas líquidas */}
+            <LiquidCursor />
 
-          <Loader />
+            <Loader />
 
-          <Navbar />
-          <main className="relative z-10">{children}</main>
-          <Footer />
+            <ChromeWrapper />
+            <main className="relative z-10">{children}</main>
+            <Footer />
 
-          {/* Drawer del carrito — vive en el layout para estar siempre disponible */}
-          <CartSidebar />
+            {/* Drawer del carrito — vive en el layout para estar siempre disponible */}
+            <CartSidebar />
+
+            {/* Botón flotante de WhatsApp — asistencia (se oculta en producto/checkout) */}
+            <WhatsAppButton />
+          </CatalogProvider>
         </CartProvider>
       </body>
     </html>

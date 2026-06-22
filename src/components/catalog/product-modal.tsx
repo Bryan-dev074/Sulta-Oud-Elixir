@@ -46,13 +46,19 @@ export function ProductModal({ perfume, onClose }: ProductModalProps) {
     setCantidad(1);
   }, [perfume?.id]);
 
-  // Bloquear scroll del body cuando abre
+  // Bloquear scroll del body cuando abre + avisar al botón de WhatsApp
   useEffect(() => {
     if (!perfume) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    window.dispatchEvent(
+      new CustomEvent("sultan:producto-modal", { detail: true })
+    );
     return () => {
       document.body.style.overflow = prev;
+      window.dispatchEvent(
+        new CustomEvent("sultan:producto-modal", { detail: false })
+      );
     };
   }, [perfume]);
 
@@ -135,7 +141,7 @@ export function ProductModal({ perfume, onClose }: ProductModalProps) {
       >
         <div className="overflow-hidden rounded-sm border border-gold/20 bg-coal/95 shadow-[0_0_80px_-20px_rgba(212,175,55,0.3)] md:grid md:grid-cols-2">
           {/* Imagen — en móvil tiene altura fija visible */}
-          <div className="relative h-72 w-full md:h-auto md:min-h-[600px]">
+          <div className="relative h-64 w-full md:h-auto md:min-h-[600px]">
             <Image
               src={perfume.url_imagen}
               alt={perfume.nombre}
@@ -176,8 +182,9 @@ export function ProductModal({ perfume, onClose }: ProductModalProps) {
             </button>
           </div>
 
-          {/* Detalle */}
-          <div className="flex flex-col overflow-y-auto p-6 md:max-h-[600px] md:p-10">
+          {/* Detalle — en móvil también limita altura y hace scroll interno,
+              para que el botón "Agregar al carrito" nunca quede fuera de pantalla */}
+          <div className="flex max-h-[70vh] flex-col overflow-y-auto p-6 md:max-h-[600px] md:p-10">
             <div className="flex items-start justify-between">
               <p className="modal-eyebrow eyebrow text-[0.6rem]">
                 {perfume.categoria.join(" · ")}
