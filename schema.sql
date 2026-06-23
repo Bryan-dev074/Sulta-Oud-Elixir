@@ -285,6 +285,7 @@ on conflict (sku) do update set
     notas_olfativas      = excluded.notas_olfativas,
     categoria            = excluded.categoria,
     destacado            = excluded.destacado,
+    es_demo              = true,
     updated_at           = now();
 
 -- ============================================================================
@@ -340,6 +341,18 @@ create table if not exists public.config_proveedores (
 update public.perfumes
    set es_dropi = true
  where sku is not null and sku like 'DROPI-%';
+
+-- Backfill CRÍTICO: marca como es_demo = true a todos los perfumes del seed
+-- original, incluso si ya estaban cargados con es_demo = false (caso típico
+-- al re-correr el script antes de este fix). Esto hace que aparezcan en la
+-- pestaña "Pruebas del Sistema" del panel /admin y se puedan ocultar/borrar.
+update public.perfumes
+   set es_demo = true
+ where sku in (
+    'LTTF-OUDMOOD', 'LTTF-BADGE-GLORY', 'ARMAF-CLUBNUIT-INT', 'LTTF-YARAMOI',
+    'LTTF-ASAD', 'LTTF-KHAMRAH', 'RSI-HAWAS', 'AFNAN-9PM', 'LTTF-FAKHAR-BLK',
+    'AFNAN-SUPREM-INT', 'LTTF-AMEER-OUDH'
+ );
 
 -- ============================================================================
 --  FIN DEL SCRIPT
