@@ -9,6 +9,7 @@ import {
   cerrarSesionAdmin,
 } from "@/lib/supabase-admin";
 import { Perfume, Cupon } from "@/types/database";
+import { FALLBACK_PERFUMES } from "@/data/fallback-perfumes";
 
 // ────────────────────────────────────────────────────────────────────────────
 //  Tipos de entrada / salida
@@ -480,4 +481,87 @@ export async function cargarDatosAdmin(): Promise<DatosAdmin> {
   }
 
   return { ...base, perfumes, cupones, top5, proveedor };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+//  INICIALIZACIÓN · Cargar los perfumes de prueba a Supabase desde el panel
+//  (Útil cuando la base está vacía y no querés correr SQL a mano)
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Inserta los 11 perfumes de prueba (fallback) en Supabase, marcándolos como
+ * es_demo = true. Usa upsert por SKU para no duplicar si ya existen.
+ * Esto resuelve el caso en el que la tienda muestra los perfumes del
+ * fallback local pero el panel /admin sale vacío.
+ */
+export async function inicializarDemosAction(): Promise<
+  ActionResult & { cargados?: number }
+> {
+  await requerirAdmin();
+  const supabase = supabaseAdmin();
+
+  // Mapear el fallback al payload de inserción (sin id/created_at/updated_at
+  // para que la base los genere)
+  const payload = FALLBACK_PERFUMES.map((p) => ({
+    nombre: p.nombre,
+    marca: p.marca,
+    precio_regular: p.precio_regular,
+    precio_descuento: p.precio_descuento,
+    en_oferta: p.en_oferta,
+    stock_disponible: p.stock_disponible,
+    volumen_ml: p.volumen_ml,
+    activo: p.activo,
+    url_imagen: p.url_imagen,
+    descripcion: p.descripcion,
+    notas_olfativas: p.notas_olfativas,
+    categoria: p.categoria,
+    sku: p.sku,
+    destacado: p.destacado,
+    es_dropi: false,
+    es_demo: true,
+    clicks_mensuales: 0,
+  }));
+
+  const { data, error } = await supabase
+    .from("perfumes")
+    .upsert(payload, { onConflict: "sku" })
+    .select("id");
+
+  if (error) {
+    console.error("[inicializarDemosAction]", error.message);
+    return { ok: false, error: error.message };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  return {
+    ok: true,
+    cargados: data?.length ?? payload.length,
+  };
+}
+
+/**
+ * Borra TODOS los perfumes marcados como demo (es_demo = true).
+ * Útil para limpiar la base cuando ya cargaste tus productos reales.
+ */
+export async function borrarTodosLosDemosAction(): Promise<
+  ActionResult & { borrados?: number }
+> {
+  await requerirAdmin();
+  const supabase = supabaseAdmin();
+
+  const { data, error } = await supabase
+    .from("perfumes")
+    .delete()
+    .eq("es_demo", true)
+    .select("id");
+
+  if (error) {
+    console.error("[borrarTodosLosDemosAction]", error.message);
+    return { ok: false, error: error.message };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  return { ok: true, borrados: data?.length ?? 0 };
 }

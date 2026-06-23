@@ -6,7 +6,7 @@ import {
   Lock, Eye, EyeOff, LogOut, Plus, Minus, Pencil, Trash2,
   Search, Star, Power, Tag, Boxes, X, ExternalLink,
   AlertTriangle, CheckCircle2, FlaskConical, Sun, Moon,
-  BarChart2, RefreshCw, Zap, ShieldAlert, KeyRound, Save,
+  BarChart2, RefreshCw, Zap, ShieldAlert, KeyRound, Save, Database,
 } from "lucide-react";
 import { Perfume, Cupon } from "@/types/database";
 import { formatGs, precioEfectivo } from "@/lib/format";
@@ -15,6 +15,7 @@ import {
   ajustarStockAction, togglePerfumeAction, ocultarTodosAction, mostrarTodosAction,
   guardarCuponAction, toggleCuponAction, eliminarCuponAction, resetearClicksAction,
   guardarProveedorAction, sincronizarProveedorAction,
+  inicializarDemosAction, borrarTodosLosDemosAction,
   type PerfumeInput, type CuponInput, type DatosAdmin,
   type ConfigProveedor,
 } from "./actions";
@@ -358,6 +359,11 @@ function PanelView({ datos }: { datos: DatosAdmin }) {
           ))}
         </div>
 
+        {/* ── BANNER DE INICIALIZACIÓN (cuando la base está vacía) ── */}
+        {datos.configurado && perfumes.length === 0 && (
+          <InicializarVacio toast={toast_} />
+        )}
+
         {/* ── CONTENIDO ── */}
         {pestaña === "stock" && (
           <TablaStock
@@ -412,6 +418,22 @@ function PanelView({ datos }: { datos: DatosAdmin }) {
             onToggle={onToggle}
             onEditar={(p) => setModalPerfume(toInput(p))}
             onEliminar={onEliminar}
+            onBorrarTodos={() => {
+              if (demos.length === 0) return;
+              if (!confirm(
+                `¿BORRAR definitivamente los ${demos.length} perfumes de prueba ` +
+                `de tu base de datos? Esta acción no se puede deshacer.`
+              )) return;
+              startTransition(async () => {
+                const res = await borrarTodosLosDemosAction();
+                if (res.ok) {
+                  toast_("ok", `${res.borrados ?? demos.length} demos borrados.`);
+                  setPerfumes((prev) => prev.filter((p) => !p.es_demo));
+                } else {
+                  toast_("error", res.error ?? "Error al borrar");
+                }
+              });
+            }}
           />
         )}
         {pestaña === "analitica" && (
@@ -645,6 +667,68 @@ function ProveedorConfig({
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+//  BANNER DE INICIALIZACIÓN — cuando la base de datos está vacía
+//  Permite cargar los 11 perfumes de prueba a Supabase con un clic,
+//  sin tener que correr SQL a mano. Así el panel deja de verse vacío.
+// ════════════════════════════════════════════════════════════════════════════
+function InicializarVacio({ toast }: { toast: (t: "ok" | "error", m: string) => void }) {
+  const [pending, startTransition] = useTransition();
+
+  const inicializar = () => {
+    if (!confirm(
+      "Se van a cargar 11 perfumes de prueba a tu base de datos de Supabase " +
+      "(marcados como demos). Después vas a poder editarlos, ocultarlos o borrarlos " +
+      "desde la pestaña 'Pruebas del Sistema'. ¿Continuar?"
+    )) return;
+    startTransition(async () => {
+      const res = await inicializarDemosAction();
+      if (res.ok) {
+        toast("ok", `${res.cargados ?? 11} perfumes de prueba cargados. Recargando…`);
+        setTimeout(() => window.location.reload(), 1200);
+      } else {
+        toast("error", res.error ?? "Error al cargar");
+      }
+    });
+  };
+
+  return (
+    <div className="adm-feature-card mb-6">
+      <div className="flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-start gap-3">
+          <div
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg"
+            style={{ color: "var(--adm-gold)", background: "var(--adm-blue-bg)" }}
+          >
+            <Database className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold" style={{ color: "var(--adm-text)" }}>
+              Tu base de datos está vacía
+            </h3>
+            <p className="mt-0.5 text-sm" style={{ color: "var(--adm-text-muted)" }}>
+              Los perfumes que ves en la tienda vienen de un respaldo local.
+              Para poder <strong>editarlos, ocultarlos o borrarlos desde acá</strong>,
+              primero cargalos a tu base de datos con el botón de la derecha.
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={inicializar}
+          disabled={pending}
+          className="adm-btn adm-btn-gold shrink-0"
+        >
+          {pending ? (
+            <><span className="adm-spinner" /> Cargando…</>
+          ) : (
+            <><Plus className="h-4 w-4" /> Cargar 11 perfumes de prueba</>
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 //  TABLA DE STOCK (reutilizada para Stock Local y Origen Externo)
 // ════════════════════════════════════════════════════════════════════════════
 function TablaStock({
@@ -844,7 +928,7 @@ function TablaStock({
 //  PESTAÑA: PRUEBAS DEL SISTEMA
 // ════════════════════════════════════════════════════════════════════════════
 function DemoView({
-  perfumes, onOcultar, onMostrar, onToggle, onEditar, onEliminar,
+  perfumes, onOcultar, onMostrar, onToggle, onEditar, onEliminar, onBorrarTodos,
 }: {
   perfumes: Perfume[];
   onOcultar: () => void;
@@ -852,6 +936,7 @@ function DemoView({
   onToggle: (id: string, c: "activo" | "destacado", v: boolean) => void;
   onEditar: (p: Perfume) => void;
   onEliminar: (p: Perfume) => void;
+  onBorrarTodos: () => void;
 }) {
   const [query, setQuery] = useState("");
   const activos = perfumes.filter((p) => p.activo).length;
@@ -888,6 +973,14 @@ function DemoView({
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            onClick={onBorrarTodos}
+            disabled={perfumes.length === 0}
+            className="adm-btn adm-btn-danger adm-btn-sm"
+            title="Borrar definitivamente todos los perfumes de prueba de la base de datos"
+          >
+            <Trash2 className="h-3.5 w-3.5" /> Borrar todos
+          </button>
           <button
             onClick={onMostrar}
             className="adm-btn adm-btn-ghost adm-btn-sm"
