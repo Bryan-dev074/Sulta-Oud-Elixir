@@ -6,7 +6,7 @@ import {
   Lock, Eye, EyeOff, LogOut, Plus, Minus, Pencil, Trash2,
   Search, Star, Power, Tag, Boxes, X, ExternalLink,
   AlertTriangle, CheckCircle2, FlaskConical, Sun, Moon,
-  BarChart2, RefreshCw, Zap, ShieldAlert, KeyRound, Save, Database,
+  BarChart2, RefreshCw, Zap, ShieldAlert, KeyRound, Save, Database, Sparkles,
 } from "lucide-react";
 import { Perfume, Cupon, TiendaProducto } from "@/types/database";
 import { formatGs, precioEfectivo } from "@/lib/format";
@@ -22,6 +22,7 @@ import {
 } from "./actions";
 import SyncSheetButton from "./sync-sheet-button";
 import MonedaPreciosButtons from "./moneda-precios-buttons";
+import AsistenteCarga from "./asistente-carga";
 import ImageDrop from "./image-drop";
 
 // ─── Tipos ──────────────────────────────────────────────────────────────────
@@ -31,7 +32,7 @@ interface AdminClientProps {
   datos: DatosAdmin;
 }
 
-type Pestaña = "stock" | "externo" | "demo" | "analitica" | "cupones";
+type Pestaña = "asistente" | "stock" | "externo" | "demo" | "analitica" | "cupones";
 
 interface Toast { tipo: "ok" | "error"; texto: string; }
 
@@ -359,6 +360,7 @@ function PanelView({ datos }: { datos: DatosAdmin }) {
         <div className="mb-5 flex flex-wrap gap-2">
           {(
             [
+              { id: "asistente", icon: <Sparkles className="h-4 w-4" />, label: "Asistente IA" },
               { id: "stock", icon: <Boxes className="h-4 w-4" />, label: "Mi Stock Local" },
               { id: "externo", icon: <FlaskConical className="h-4 w-4" />, label: "Origen Externo" },
               { id: "demo", icon: <ShieldAlert className="h-4 w-4" />, label: "Pruebas del Sistema" },
@@ -383,6 +385,7 @@ function PanelView({ datos }: { datos: DatosAdmin }) {
         )}
 
         {/* ── CONTENIDO ── */}
+        {pestaña === "asistente" && <AsistenteCarga toast={toast_} />}
         {pestaña === "stock" && (
           <>
             <SyncSheetButton toast={toast_} />
