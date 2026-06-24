@@ -2,14 +2,13 @@
 
 import { useState, useCallback } from "react";
 import {
-  Sparkles, AlertTriangle, CheckCircle2, ExternalLink, Search, Loader2, Save, Wand2,
+  Sparkles, AlertTriangle, CheckCircle2, ExternalLink, Search, Loader2, Save, Wand2, Clock,
 } from "lucide-react";
 import { guardarPerfumeAction, type PerfumeInput } from "./actions";
 
-// ─── Tipos que devuelven las rutas del asistente ────────────────────────────
 interface Candidato { titulo: string; url: string; precio: string; }
 interface ResultadoTienda {
-  id: string; tienda: string; metodo: "html" | "api" | "manual"; urlTienda: string;
+  id: string; tienda: string; metodo: "html" | "api"; urlTienda: string;
   candidatos: Candidato[]; mejorIndice: number; confianza: number;
   semaforo: "verde" | "amarillo" | "rojo"; nota?: string;
 }
@@ -17,17 +16,16 @@ interface PerfumeIA {
   marca: string; volumen_ml: number; categoria: string[]; descripcion: string;
   notas_olfativas: { salida: string[]; corazon: string[]; fondo: string[] };
 }
+type ErrTipo = "error" | "warn" | "wait";
 
 const lista = (a: string[]) => (a ?? []).join(", ");
 const desdeLista = (s: string) => s.split(",").map((x) => x.trim()).filter(Boolean);
 
-/**
- * Asistente de carga de productos con IA:
- *  1. Nombre → chequeo de duplicados (onBlur) con alerta roja.
- *  2. "Sincronizar" → Gemini (datos) + scraping de tiendas (en paralelo).
- *  3. Autocompletado de campos + tabla semáforo con selects pre-elegidos.
- *  4. "Confirmar y Guardar" → registra el producto con todas sus tiendas.
- */
+/** Barra gris parpadeante para los campos que se están autocompletando. */
+function Skeleton({ alto = "h-9", ancho = "w-full" }: { alto?: string; ancho?: string }) {
+  return <div className={`${alto} ${ancho} animate-pulse rounded`} style={{ background: "var(--adm-surface-2)" }} />;
+}
+
 export default function AsistenteCarga({
   toast,
 }: {
@@ -39,8 +37,8 @@ export default function AsistenteCarga({
   const [cargando, setCargando] = useState(false);
   const [hechoIA, setHechoIA] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState<{ tipo: ErrTipo; texto: string } | null>(null);
 
-  // Campos del perfume (autocompletados por la IA, editables)
   const [marca, setMarca] = useState("");
   const [ml, setMl] = useState<number>(100);
   const [categorias, setCategorias] = useState("");
@@ -49,14 +47,12 @@ export default function AsistenteCarga({
   const [nCorazon, setNCorazon] = useState("");
   const [nFondo, setNFondo] = useState("");
 
-  // Tiendas (tabla semáforo) + selección por tienda
   const [tiendas, setTiendas] = useState<ResultadoTienda[]>([]);
-  const [seleccion, setSeleccion] = useState<Record<string, number>>({}); // id → índice de candidato
+  const [seleccion, setSeleccion] = useState<Record<string, number>>({});
 
   const bloqueado = dup.candidatos.length > 0 && !ignorarDup;
   const listoParaSync = nombre.trim().length >= 3 && !bloqueado && !cargando;
 
-  // ── Chequeo de duplicados (onBlur) ──
   const chequearDuplicados = useCallback(async () => {
     const n = nombre.trim();
     if (n.length < 3) { setDup({ candidatos: [], chequeado: false }); return; }
@@ -72,34 +68,40 @@ export default function AsistenteCarga({
     }
   }, [nombre]);
 
-  // ── Sincronizar: Gemini + tiendas en paralelo ──
+  // ── Sincronizar: Gemini + tiendas en paralelo, con manejo robusto de errores ──
   const sincronizar = async () => {
-    if (!listoParaSync) return;
+    if (!listoParaSync || cargando) return; // bloqueo anti doble-clic
     setCargando(true);
+    setError(null);
     setHechoIA(false);
     try {
-      const body = JSON.stringify({ nombre: nombre.trim() });
-      const opt = { method: "POST", headers: { "Content-Type": "application/json" }, body };
+      const opt = { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nombre: nombre.trim() }) };
       const [rP, rT] = await Promise.all([
         fetch("/api/asistente/perfume", opt),
         fetch("/api/asistente/tiendas", opt),
       ]);
-      const dP = await rP.json();
-      const dT = await rT.json();
+      const dP = await rP.json().catch(() => ({ ok: false, error: "Respuesta inválida de la IA." }));
+      const dT = await rT.json().catch(() => ({ ok: false }));
 
-      if (dP.ok) {
-        const p: PerfumeIA = dP.perfume;
-        setMarca(p.marca || "");
-        setMl(p.volumen_ml || 100);
-        setCategorias(lista(p.categoria));
-        setDescripcion(p.descripcion || "");
-        setNSalida(lista(p.notas_olfativas?.salida));
-        setNCorazon(lista(p.notas_olfativas?.corazon));
-        setNFondo(lista(p.notas_olfativas?.fondo));
-      } else {
-        toast?.("error", dP.error ?? "Gemini no respondió (¿falta la API key?).");
+      // Errores del flujo de datos (validación / ritmo / red).
+      if (!dP.ok) {
+        if (dP.codigo === "NO_PERFUME") setError({ tipo: "warn", texto: dP.error });
+        else if (dP.codigo === "RITMO" || dP.codigo === "SATURADO") setError({ tipo: "wait", texto: dP.error });
+        else setError({ tipo: "error", texto: dP.error ?? "No se pudieron obtener los datos del perfume." });
+        return;
       }
 
+      // Datos del perfume → autocompletar.
+      const p: PerfumeIA = dP.perfume;
+      setMarca(p.marca || "");
+      setMl(p.volumen_ml || 100);
+      setCategorias(lista(p.categoria));
+      setDescripcion(p.descripcion || "");
+      setNSalida(lista(p.notas_olfativas?.salida));
+      setNCorazon(lista(p.notas_olfativas?.corazon));
+      setNFondo(lista(p.notas_olfativas?.fondo));
+
+      // Tiendas (si fallaron por ritmo, igual mostramos los datos del perfume).
       if (dT.ok) {
         const ts: ResultadoTienda[] = dT.tiendas ?? [];
         setTiendas(ts);
@@ -107,18 +109,18 @@ export default function AsistenteCarga({
         ts.forEach((t) => { sel[t.id] = t.mejorIndice; });
         setSeleccion(sel);
       } else {
-        toast?.("error", dT.error ?? "No se pudo buscar en las tiendas.");
+        setTiendas([]);
       }
+
       setHechoIA(true);
-      toast?.("ok", "Datos cargados. Revisá la tabla de tiendas y guardá.");
-    } catch (e) {
-      toast?.("error", e instanceof Error ? e.message : "Error en la sincronización.");
+      toast?.("ok", dP.cacheado ? "Datos recuperados (caché)." : "Datos cargados. Revisá las tiendas y guardá.");
+    } catch {
+      setError({ tipo: "error", texto: "Falló la conexión. Revisá la red y reintentá." });
     } finally {
       setCargando(false);
     }
   };
 
-  // ── Guardar producto + tiendas seleccionadas ──
   const guardar = async () => {
     setGuardando(true);
     const tiendasGuardar = tiendas
@@ -138,8 +140,7 @@ export default function AsistenteCarga({
       const res = await guardarPerfumeAction(input);
       if (res.ok) {
         toast?.("ok", `Producto "${nombre}" guardado con ${tiendasGuardar.length} tienda(s).`);
-        // Reset
-        setNombre(""); setDup({ candidatos: [], chequeado: false }); setHechoIA(false);
+        setNombre(""); setDup({ candidatos: [], chequeado: false }); setHechoIA(false); setError(null);
         setMarca(""); setMl(100); setCategorias(""); setDescripcion(""); setNSalida(""); setNCorazon(""); setNFondo("");
         setTiendas([]); setSeleccion({});
       } else {
@@ -152,14 +153,14 @@ export default function AsistenteCarga({
     }
   };
 
-  const colorSemaforo = (s: ResultadoTienda["semaforo"]) =>
+  const colorSem = (s: ResultadoTienda["semaforo"]) =>
     s === "verde" ? "var(--adm-green)" : s === "amarillo" ? "var(--adm-amber)" : "var(--adm-red)";
-  const bgSemaforo = (s: ResultadoTienda["semaforo"]) =>
+  const bgSem = (s: ResultadoTienda["semaforo"]) =>
     s === "verde" ? "var(--adm-green-bg)" : s === "amarillo" ? "var(--adm-amber-bg)" : "var(--adm-red-bg)";
 
   return (
     <div className="space-y-5">
-      {/* ── Cabecera + nombre + sincronizar ── */}
+      {/* Cabecera + nombre + sincronizar */}
       <div className="adm-feature-card">
         <div className="mb-3 flex items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ color: "var(--adm-gold)", background: "var(--adm-blue-bg)" }}>
@@ -168,7 +169,7 @@ export default function AsistenteCarga({
           <div>
             <h3 className="text-base font-bold" style={{ color: "var(--adm-text)" }}>🪄 Asistente de carga con IA</h3>
             <p className="mt-0.5 text-sm" style={{ color: "var(--adm-text-muted)" }}>
-              Escribí el nombre del perfume; la IA completa los datos y busca el precio en todas las tiendas.
+              Escribí el nombre del perfume; la IA valida, completa los datos y busca el precio en las 16 tiendas.
             </p>
           </div>
         </div>
@@ -178,8 +179,9 @@ export default function AsistenteCarga({
             <label className="adm-label">Nombre del producto</label>
             <input
               value={nombre}
-              onChange={(e) => { setNombre(e.target.value); setDup({ candidatos: [], chequeado: false }); }}
+              onChange={(e) => { setNombre(e.target.value); setDup({ candidatos: [], chequeado: false }); setError(null); }}
               onBlur={chequearDuplicados}
+              disabled={cargando}
               className="adm-input mt-1"
               placeholder="Ej: Lattafa Yara Eau de Parfum 100ml"
             />
@@ -190,9 +192,24 @@ export default function AsistenteCarga({
             className={`adm-btn adm-btn-gold shrink-0${listoParaSync ? " animate-pulse" : ""}`}
             title={bloqueado ? "Resolvé la alerta de duplicado primero" : undefined}
           >
-            {cargando ? <><Loader2 className="h-4 w-4 animate-spin" /> Buscando…</> : <><Sparkles className="h-4 w-4" /> Sincronizar Producto</>}
+            {cargando
+              ? <><Loader2 className="h-4 w-4 animate-spin" /> Buscando precios y analizando notas… (5-8 segs)</>
+              : <><Sparkles className="h-4 w-4" /> Sincronizar Producto</>}
           </button>
         </div>
+
+        {/* Alerta de error / aviso / esperar */}
+        {error && (
+          <div className="mt-3 flex items-start gap-2 rounded-lg border p-3 text-sm font-medium"
+            style={{
+              borderColor: error.tipo === "wait" ? "var(--adm-amber)" : "var(--adm-red)",
+              background: error.tipo === "wait" ? "var(--adm-amber-bg)" : "var(--adm-red-bg)",
+              color: error.tipo === "wait" ? "var(--adm-amber)" : "var(--adm-red)",
+            }}>
+            {error.tipo === "wait" ? <Clock className="mt-0.5 h-4 w-4 shrink-0" /> : <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />}
+            <span>{error.texto}</span>
+          </div>
+        )}
 
         {/* Alerta de duplicado */}
         {bloqueado && (
@@ -207,14 +224,24 @@ export default function AsistenteCarga({
             </div>
           </div>
         )}
-        {dup.chequeado && dup.candidatos.length === 0 && nombre.trim().length >= 3 && (
+        {dup.chequeado && dup.candidatos.length === 0 && !error && nombre.trim().length >= 3 && (
           <p className="mt-2 flex items-center gap-1.5 text-xs" style={{ color: "var(--adm-green)" }}>
             <CheckCircle2 className="h-3.5 w-3.5" /> Sin duplicados. Listo para sincronizar.
           </p>
         )}
       </div>
 
-      {/* ── Campos autocompletados ── */}
+      {/* Skeletons mientras carga */}
+      {cargando && (
+        <div className="adm-feature-card">
+          <Skeleton alto="h-4" ancho="w-48" />
+          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+            {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} />)}
+          </div>
+        </div>
+      )}
+
+      {/* Campos autocompletados */}
       {hechoIA && (
         <div className="adm-feature-card">
           <h4 className="mb-3 text-sm font-bold" style={{ color: "var(--adm-text)" }}>Datos del perfume (autocompletados — editá si hace falta)</h4>
@@ -230,22 +257,18 @@ export default function AsistenteCarga({
         </div>
       )}
 
-      {/* ── Tabla semáforo de tiendas ── */}
+      {/* Tabla semáforo de tiendas */}
       {hechoIA && tiendas.length > 0 && (
         <div className="adm-feature-card">
           <h4 className="mb-3 text-sm font-bold" style={{ color: "var(--adm-text)" }}>Tiendas ({tiendas.length}) — verde &gt;90% · amarillo revisar · rojo manual</h4>
           <div className="space-y-1.5">
             {tiendas.map((t) => (
-              <div key={t.id} className="flex flex-wrap items-center gap-2 rounded-lg border p-2 text-sm" style={{ borderColor: colorSemaforo(t.semaforo), background: bgSemaforo(t.semaforo) }}>
-                <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: colorSemaforo(t.semaforo) }} />
+              <div key={t.id} className="flex flex-wrap items-center gap-2 rounded-lg border p-2 text-sm" style={{ borderColor: colorSem(t.semaforo), background: bgSem(t.semaforo) }}>
+                <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: colorSem(t.semaforo) }} />
                 <span className="w-40 shrink-0 font-semibold" style={{ color: "var(--adm-text)" }}>{t.tienda}</span>
                 <a href={t.urlTienda} target="_blank" rel="noreferrer" className="shrink-0" title="Abrir tienda" style={{ color: "var(--adm-text-muted)" }}><ExternalLink className="h-4 w-4" /></a>
                 {t.candidatos.length > 0 ? (
-                  <select
-                    value={seleccion[t.id] ?? -1}
-                    onChange={(e) => setSeleccion((s) => ({ ...s, [t.id]: Number(e.target.value) }))}
-                    className="adm-input flex-1" style={{ minWidth: 200 }}
-                  >
+                  <select value={seleccion[t.id] ?? -1} onChange={(e) => setSeleccion((s) => ({ ...s, [t.id]: Number(e.target.value) }))} className="adm-input flex-1" style={{ minWidth: 200 }}>
                     <option value={-1}>— ninguno —</option>
                     {t.candidatos.map((c, i) => <option key={i} value={i}>{c.titulo} · {c.precio}</option>)}
                   </select>
@@ -255,14 +278,14 @@ export default function AsistenteCarga({
                 <a href={t.urlTienda} target="_blank" rel="noreferrer" className="adm-btn adm-btn-ghost adm-btn-sm shrink-0">
                   <Search className="h-3.5 w-3.5" /> Búsqueda Manual
                 </a>
-                {t.candidatos.length > 0 && <span className="shrink-0 text-xs font-semibold" style={{ color: colorSemaforo(t.semaforo) }}>{t.confianza}%</span>}
+                {t.candidatos.length > 0 && <span className="shrink-0 text-xs font-semibold" style={{ color: colorSem(t.semaforo) }}>{t.confianza}%</span>}
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* ── Guardar ── */}
+      {/* Guardar */}
       {hechoIA && (
         <div className="flex justify-end">
           <button onClick={guardar} disabled={guardando} className="adm-btn adm-btn-gold">

@@ -1,4 +1,5 @@
 import { TIENDAS_AUTOMATICAS, type TiendaConfig } from "@/data/tiendas-config";
+import { fetchConReintento } from "@/lib/asistente-cache";
 
 /**
  * Motor de búsqueda de un producto en TODAS las tiendas (Flujo B del asistente).
@@ -35,13 +36,15 @@ export interface ResultadoTienda {
 async function descargar(url: string, metodo: TiendaConfig["metodo"]): Promise<string | null> {
   try {
     if (metodo === "api") {
-      const prov = (process.env.SCRAPER_PROVIDER || "crawlbase").toLowerCase();
+      const prov = (process.env.SCRAPER_PROVIDER || "scraperapi").toLowerCase();
       const key = process.env.SCRAPER_API_KEY;
       if (!key) return null; // sin API key no se puede; el caller lo marca como pendiente
       const apiUrl =
         prov === "scrapingbee"
           ? `https://app.scrapingbee.com/api/v1/?api_key=${key}&url=${encodeURIComponent(url)}&render_js=true`
-          : `https://api.crawlbase.com/?token=${key}&url=${encodeURIComponent(url)}`;
+          : prov === "crawlbase"
+            ? `https://api.crawlbase.com/?token=${key}&url=${encodeURIComponent(url)}`
+            : `https://api.scraperapi.com/?api_key=${key}&url=${encodeURIComponent(url)}&render=true`;
       const r = await fetch(apiUrl);
       return r.ok ? await r.text() : null;
     }
@@ -106,7 +109,7 @@ async function puntuar(
     return out;
   }
 
-  const modelo = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+  const modelo = process.env.GEMINI_MODEL || "gemini-2.5-flash";
   const lista = conCandidatos
     .map((p) => `Tienda ${p.id}:\n` + p.candidatos.map((c, i) => `  [${i}] ${c.titulo} (${c.precio})`).join("\n"))
     .join("\n");
@@ -133,7 +136,7 @@ async function puntuar(
     required: ["evaluaciones"],
   };
   try {
-    const r = await fetch(
+    const r = await fetchConReintento(
       `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${apiKey}`,
       {
         method: "POST",
