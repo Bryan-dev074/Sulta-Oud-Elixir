@@ -2,15 +2,10 @@ import { TIENDAS_AUTOMATICAS, type TiendaConfig } from "@/data/tiendas-config";
 import { fetchConReintento } from "@/lib/asistente-cache";
 
 /**
- * Motor de búsqueda de un producto en TODAS las tiendas (Flujo B del asistente).
- * Por cada tienda automática busca el producto, extrae hasta 3 candidatos
- * (título, URL, precio) y Gemini puntúa cuál es el correcto. Devuelve los datos
- * para la tabla semáforo del panel.
- *
- * Las tiendas con metodo "api" (403 / JS) se consultan a través de una API de
- * scraping (Crawlbase o ScrapingBee), configurable por env:
- *   SCRAPER_PROVIDER = "crawlbase" | "scrapingbee"
- *   SCRAPER_API_KEY  = token de la API
+ * Motor de búsqueda de un producto en las 11 tiendas HTML (Flujo B del asistente).
+ * Por cada tienda busca el producto por fetch directo (gratis, sin API paga),
+ * extrae hasta 3 candidatos (título, URL, precio) y Gemini puntúa cuál es el
+ * correcto. Devuelve los datos para la tabla semáforo del panel.
  */
 
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36";
@@ -21,7 +16,6 @@ export type Semaforo = "verde" | "amarillo" | "rojo";
 export interface ResultadoTienda {
   id: string;
   tienda: string;
-  metodo: TiendaConfig["metodo"];
   urlTienda: string;
   candidatos: Candidato[];
   /** índice del candidato pre-seleccionado por la IA; -1 si ninguno. */
@@ -32,26 +26,9 @@ export interface ResultadoTienda {
   nota?: string;
 }
 
-/** Descarga HTML: directo para "html", vía API de scraping para "api". */
-async function descargar(url: string, metodo: TiendaConfig["metodo"]): Promise<string | null> {
+/** Descarga el HTML de una página por fetch directo (sin API de scraping). */
+async function descargar(url: string): Promise<string | null> {
   try {
-    if (metodo === "api") {
-      const prov = (process.env.SCRAPER_PROVIDER || "zenrows").toLowerCase();
-      const key = process.env.SCRAPER_API_KEY;
-      if (!key) return null; // sin API key no se puede; el caller lo marca como pendiente
-      const u = encodeURIComponent(url);
-      const apiUrl =
-        prov === "scrapingbee"
-          ? `https://app.scrapingbee.com/api/v1/?api_key=${key}&url=${u}&render_js=true`
-          : prov === "crawlbase"
-            ? `https://api.crawlbase.com/?token=${key}&url=${u}`
-            : prov === "scraperapi"
-              ? `https://api.scraperapi.com/?api_key=${key}&url=${u}&render=true`
-              // ZenRows (default): js_render + premium_proxy bypassea Cloudflare/403.
-              : `https://api.zenrows.com/v1/?apikey=${key}&url=${u}&js_render=true&premium_proxy=true`;
-      const r = await fetch(apiUrl);
-      return r.ok ? await r.text() : null;
-    }
     const r = await fetch(url, { headers: { "User-Agent": UA } });
     return r.ok ? await r.text() : null;
   } catch {
@@ -64,7 +41,7 @@ async function buscarCandidatos(t: TiendaConfig, nombre: string): Promise<Candid
   // Pionner Shop — validado: búsqueda por término → resultados con link y precio.
   if (t.id === "pionner") {
     const url = `https://www.pionnershop.com/index.php?route=product/search&search=${encodeURIComponent(nombre)}`;
-    const html = await descargar(url, "html");
+    const html = await descargar(url);
     if (!html) return [];
     const out: Candidato[] = [];
     const re = /href="(https:\/\/www\.pionnershop\.com\/[a-z0-9][a-z0-9-]{8,}[A-Za-z]{1,3})"/gi;
@@ -74,7 +51,7 @@ async function buscarCandidatos(t: TiendaConfig, nombre: string): Promise<Candid
       const link = m[1];
       if (vistos.has(link)) continue;
       vistos.add(link);
-      const ph = await descargar(link, "html");
+      const ph = await descargar(link);
       const blk = ph ? ph.substring(ph.indexOf("price-product"), ph.indexOf("price-product") + 2600) : "";
       const usd = blk.match(/U\$\s*([\d.,]+)/)?.[1];
       const gs = blk.match(/G\$\s*([\d.,]+)/)?.[1];
@@ -84,7 +61,7 @@ async function buscarCandidatos(t: TiendaConfig, nombre: string): Promise<Candid
     return out;
   }
 
-  // Resto de tiendas "html"/"api": framework listo, parser por agregar.
+  // Resto de tiendas HTML: framework listo, parser por agregar.
   // (Ver scraping.md: cada tienda tiene su patrón de URL/búsqueda y selector.)
   return [];
 }
@@ -166,9 +143,9 @@ async function puntuar(
   }
 }
 
-/** Orquesta la búsqueda en todas las tiendas + la puntuación de la IA. */
+/** Orquesta la búsqueda en las 11 tiendas + la puntuación de la IA. */
 export async function buscarEnTodasLasTiendas(nombre: string): Promise<ResultadoTienda[]> {
-  // 1) Búsqueda en paralelo en las tiendas automáticas.
+  // 1) Búsqueda en paralelo en todas las tiendas.
   const busquedas = await Promise.all(
     TIENDAS_AUTOMATICAS.map(async (t) => ({ t, candidatos: await buscarCandidatos(t, nombre) }))
   );
@@ -179,17 +156,15 @@ export async function buscarEnTodasLasTiendas(nombre: string): Promise<Resultado
     busquedas.map((b) => ({ id: b.t.id, candidatos: b.candidatos }))
   );
 
-  // 3) Armar el resultado para la tabla semáforo (incluye también las manuales).
-  const automaticas: ResultadoTienda[] = busquedas.map(({ t, candidatos }) => {
+  // 3) Armar el resultado para la tabla semáforo.
+  return busquedas.map(({ t, candidatos }) => {
     const p = puntajes[t.id] ?? { mejorIndice: candidatos.length ? 0 : -1, confianza: candidatos.length ? 50 : 0 };
     const hay = candidatos.length > 0 && p.mejorIndice >= 0;
     return {
-      id: t.id, tienda: t.nombre, metodo: t.metodo, urlTienda: t.urlBase,
+      id: t.id, tienda: t.nombre, urlTienda: t.urlBase,
       candidatos, mejorIndice: hay ? p.mejorIndice : -1, confianza: hay ? p.confianza : 0,
       semaforo: semaforoDe(p.confianza, hay),
-      nota: candidatos.length === 0 ? (t.metodo === "api" && !process.env.SCRAPER_API_KEY ? "Falta API de scraping" : "Parser pendiente / búsqueda manual") : undefined,
+      nota: candidatos.length === 0 ? "Parser pendiente / búsqueda manual" : undefined,
     };
   });
-
-  return automaticas;
 }

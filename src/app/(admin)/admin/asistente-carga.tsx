@@ -8,7 +8,7 @@ import { guardarPerfumeAction, type PerfumeInput } from "./actions";
 
 interface Candidato { titulo: string; url: string; precio: string; }
 interface ResultadoTienda {
-  id: string; tienda: string; metodo: "html" | "api"; urlTienda: string;
+  id: string; tienda: string; urlTienda: string;
   candidatos: Candidato[]; mejorIndice: number; confianza: number;
   semaforo: "verde" | "amarillo" | "rojo"; nota?: string;
 }

@@ -1,5 +1,13 @@
 # Estrategia de Scraping — Tiendas de Perfumes Árabes (Ciudad del Este)
 
+> ⚠️ **ESTADO ACTUAL (decisión de producto):** el panel funciona **única y
+> exclusivamente con las 11 tiendas HTML directo** (gratis, sin API de scraping):
+> Charme, Elegancia, Aroma, Shopping China, Ponto Com, Pionner, Cellshop, Matrix,
+> Terra Nova, Mega Electrónicos y La Perfumería. Las 5 tiendas que requerían API
+> (Punto Tienda, Nissei, Macedonia, Monalisa, La Petisquera) y las solo-Instagram
+> fueron **descartadas**. No se usa ningún proveedor de scraping pago. Lo de abajo
+> queda como **referencia histórica** del análisis completo.
+
 > Generado a partir del PDF `perfumes-arabes-cde.pdf` + **verificación por fetch directo real** (jun 2026).
 > Foco árabe: Lattafa · Al Haramain · Maison Alhambra · Afnan · Rasasi · Orientica · Al Wataniah.
 > Precios en USD que se mueven con el dólar → **scrapear el mismo día** y multiplicar por la cotización (pestaña `Cotizaciones!A2`).
