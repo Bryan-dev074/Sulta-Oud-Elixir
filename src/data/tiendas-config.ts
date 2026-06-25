@@ -1,11 +1,12 @@
 /**
- * Las 11 tiendas de perfumes de Ciudad del Este que se scrapean de forma
+ * Las 10 tiendas de perfumes de Ciudad del Este que se scrapean de forma
  * AUTOMÁTICA y GRATUITA (precio en HTML crudo, fetch directo — sin API paga,
  * sin navegador headless). Verificadas por fetch directo (jun 2026).
  * Ver `scraping.md` para el detalle de cada una.
  *
- * (Se descartaron las que requerían API de scraping o cargaban precios por JS:
- *  el panel funciona solo con lo que es 100% automático y rápido.)
+ * (Se descartaron: las que requerían API de scraping o JS; y Charme Perfumería
+ *  por ser mayorista/atacado de venta por volumen, que no sirve para comprar
+ *  de a poco. El panel funciona solo con tiendas retail, automáticas y rápidas.)
  */
 
 export type Moneda = "USD" | "BRL" | "Gs";
@@ -32,14 +33,6 @@ export interface TiendaConfig {
 }
 
 export const TIENDAS: TiendaConfig[] = [
-  {
-    id: "charme", nombre: "Charme Perfumería", dominio: "charmeperfumeria.com.br",
-    urlBase: "https://charmeperfumeria.com.br/", plataforma: "VTEX",
-    monedas: ["USD", "Gs"], productoURL: "https://charmeperfumeria.com.br/det.php?id={q}",
-    busqueda: "https://charmeperfumeria.com.br/det.php?id={q}",
-    listaDescargable: "https://charmeperfumeria.com.br/precos",
-    prioridad: 1, notas: "Lista TSV descargable (PRODUTO\\tDESCRICAO\\tPRECO en USD). Mayorista nº1.",
-  },
   {
     id: "elegancia", nombre: "Elegancia Company", dominio: "eleganciacompany.com",
     urlBase: "https://www.eleganciacompany.com/productos?menu_id=arabes",
