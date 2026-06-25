@@ -5,6 +5,7 @@ import {
   Sparkles, AlertTriangle, CheckCircle2, ExternalLink, Search, Loader2, Save, Wand2, Clock,
 } from "lucide-react";
 import { guardarPerfumeAction, type PerfumeInput } from "./actions";
+import { TIENDAS } from "@/data/tiendas-config";
 
 interface Candidato { titulo: string; url: string; precio: string; }
 interface ResultadoTienda {
@@ -229,6 +230,31 @@ export default function AsistenteCarga({
             <CheckCircle2 className="h-3.5 w-3.5" /> Sin duplicados. Listo para sincronizar.
           </p>
         )}
+      </div>
+
+      {/* Tiendas que se consultan (siempre visible) */}
+      <div className="adm-feature-card">
+        <h4 className="mb-2 text-sm font-bold" style={{ color: "var(--adm-text)" }}>
+          🏬 Tiendas que se consultan automáticamente ({TIENDAS.length})
+        </h4>
+        <p className="mb-2 text-xs" style={{ color: "var(--adm-text-muted)" }}>
+          Al sincronizar, el asistente busca el precio en estas tiendas (HTML directo, gratis):
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {TIENDAS.map((t) => (
+            <a
+              key={t.id}
+              href={t.urlBase}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full border px-2.5 py-1 text-xs font-medium"
+              style={{ borderColor: "var(--adm-border)", color: "var(--adm-text-soft)", background: "var(--adm-surface-2)" }}
+              title={t.dominio}
+            >
+              {t.nombre}
+            </a>
+          ))}
+        </div>
       </div>
 
       {/* Skeletons mientras carga */}
