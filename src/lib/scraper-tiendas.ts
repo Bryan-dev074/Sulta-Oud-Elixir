@@ -78,9 +78,21 @@ async function viaProductos(searchUrl: string, linkRe: RegExp): Promise<Candidat
   return out;
 }
 
+/** Limpia el nombre para buscar mejor en las tiendas (saca ruido: EDP, ml, etc.). */
+function limpiarConsulta(nombre: string): string {
+  const limpio = nombre
+    .replace(/eau de (parfum|toilette|cologne)/gi, " ")
+    .replace(/\b(edp|edt|edc|parfum|perfume|cologne|spray|unisex|for (men|women|him|her))\b/gi, " ")
+    .replace(/\b\d+\s?ml\b/gi, " ")
+    .replace(/\b\d{2,4}\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return limpio.length >= 3 ? limpio : nombre;
+}
+
 // ── Buscadores por tienda ───────────────────────────────────────────────────
 async function buscarCandidatos(t: TiendaConfig, nombre: string): Promise<Candidato[]> {
-  const q = Q(nombre);
+  const q = Q(limpiarConsulta(nombre));
 
   // Pionner (OpenCart) — precio en el listado de resultados.
   if (t.id === "pionner") {
