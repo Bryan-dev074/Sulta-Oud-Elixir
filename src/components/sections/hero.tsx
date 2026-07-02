@@ -93,14 +93,14 @@ export function Hero() {
           {/* Sello de confianza */}
           <div
             className="flex items-center gap-3 rounded-full border border-gold/40 bg-obsidian/60 px-6 py-3.5 backdrop-blur-md"
-            title="Pago al recibir en todo Paraguay"
+            title="Envío a todo el país"
           >
             <ShieldCheck
               className="h-5 w-5 text-gold-light"
               strokeWidth={1.5}
             />
             <span className="text-xs font-semibold uppercase tracking-regal text-ivory/90">
-              Pago al recibir
+              Envío a todo el país
             </span>
           </div>
         </div>

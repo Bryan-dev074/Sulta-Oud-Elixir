@@ -113,13 +113,13 @@ export function CheckoutModal({ abierto, onClose }: CheckoutModalProps) {
               </div>
               <p className="mx-auto max-w-sm text-sm leading-relaxed text-ivory/80">
                 Abrimos WhatsApp con tu pedido listo para enviar. Tu carrito
-                ya quedó vacío. Nuestro asesor coordinará la entrega y el
-                pago al recibir.
+                ya quedó vacío. Nuestro asesor coordinará la entrega de tu
+                pedido con rastreo directo hasta tu puerta.
               </p>
 
               <div className="mt-6 rounded-sm border border-gold/20 bg-gold/[0.04] p-4">
                 <p className="text-xs uppercase tracking-regal text-gold/80">
-                  Total a pagar al recibir
+                  Total del pedido
                 </p>
                 <p className="mt-1 font-display text-3xl text-gold-gradient">
                   {formatGs(totalEnviado)}
@@ -219,8 +219,8 @@ export function CheckoutModal({ abierto, onClose }: CheckoutModalProps) {
                   </div>
                 )}
                 <div className="flex items-baseline justify-between pt-2">
-                  <span className="text-xs uppercase tracking-regal text-ivory/60">
-                    Total · pago al recibir
+                  <span className="text-xs uppercase tracking-regal text-ivory/70">
+                    Total del pedido
                   </span>
                   <span className="font-display text-3xl text-gold-gradient">
                     {formatGs(total)}
@@ -237,15 +237,7 @@ export function CheckoutModal({ abierto, onClose }: CheckoutModalProps) {
                 <span className="leading-tight">Enviar pedido por WhatsApp</span>
               </button>
 
-              {/* Continuar comprando */}
-              <button
-                onClick={continuarComprando}
-                className="mt-3 w-full text-center text-[0.65rem] uppercase tracking-regal text-ivory/50 transition-colors hover:text-gold-champagne"
-              >
-                Continuar comprando
-              </button>
-
-              <p className="mt-4 text-center text-[0.6rem] uppercase tracking-regal text-ivory/40">
+              <p className="mt-4 text-center text-[0.6rem] uppercase tracking-regal text-ivory/50">
                 Coordinamos la entrega y el método de pago por WhatsApp
               </p>
             </div>

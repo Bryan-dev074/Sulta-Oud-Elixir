@@ -20,10 +20,18 @@ export function DeliveryProfile() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center gap-3">
-        <p className="eyebrow !justify-start">Datos de entrega (opcional)</p>
-        <span className="text-[0.55rem] uppercase tracking-regal text-ivory/30">
-          Se guardan para tu próximo pedido
+      <div className="flex flex-wrap items-center gap-3">
+        <p className="eyebrow !justify-start">Datos de entrega</p>
+        {/* Chip animado: que se note que esto es OPCIONAL */}
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-gold/50 bg-gold/10 px-2.5 py-1 text-[0.6rem] font-bold uppercase tracking-regal text-gold-champagne">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-gold opacity-70" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-gold" />
+          </span>
+          Opcional
+        </span>
+        <span className="text-[0.55rem] uppercase tracking-regal text-ivory/55">
+          Podés dejarlo vacío · se guarda para tu próximo pedido
         </span>
       </div>
 

@@ -39,16 +39,16 @@ export function Footer() {
             <p className="text-elixir-shimmer font-display text-lg font-semibold italic tracking-imperial drop-shadow-[0_0_10px_rgba(212,175,55,0.35)]">
               Elixir · Paraguay
             </p>
-            <p className="mt-5 max-w-md text-base leading-relaxed text-ivory/75">
+            <p className="mt-5 max-w-md text-base leading-relaxed text-ivory/85">
               Traemos las fragancias más codiciadas del Medio Oriente
-              directamente desde Dubai. Autenticidad garantizada, entrega
-              discreta y el respaldo del pago al recibir en todo el país.
+              directamente desde Dubai. Perfumes 100% originales, entrega
+              discreta y envío asegurado a todo el país.
             </p>
           </div>
 
           <div>
             <h3 className="eyebrow mb-5 !text-gold !opacity-100">Navegación</h3>
-            <ul className="space-y-3 text-base text-ivory/75">
+            <ul className="space-y-3 text-base text-ivory/85">
               {[
                 { label: "Colección", id: "catalogo" },
                 { label: "Importación de Dubai", id: "importacion" },
@@ -72,9 +72,9 @@ export function Footer() {
 
           <div>
             <h3 className="eyebrow mb-5 !text-gold !opacity-100">Atelier</h3>
-            <ul className="space-y-3 text-base text-ivory/75">
+            <ul className="space-y-3 text-base text-ivory/85">
               <li>Importación directa · Dubai → Paraguay</li>
-              <li>Pago al recibir · Todo el territorio</li>
+              <li>Envío a todo el país · Rastreo directo</li>
               <li>Entrega discreta y coordinada</li>
             </ul>
           </div>
@@ -86,8 +86,8 @@ export function Footer() {
         {/* Bloque inferior — marca + redes + legal */}
         <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
           <div className="text-center md:text-left">
-            <p className="text-xs uppercase tracking-imperial text-ivory/65">
-              Pago al recibir en todo Paraguay
+            <p className="text-sm font-bold uppercase tracking-imperial text-gold drop-shadow-[0_0_12px_rgba(212,175,55,0.45)]">
+              Perfumes 100% originales
             </p>
           </div>
 
@@ -111,8 +111,9 @@ export function Footer() {
           </div>
 
           <div className="text-center md:text-right">
-            <p className="font-display text-sm tracking-regal text-gold-gradient">
-              © {new Date().getFullYear()} Sultan Oud Elixir
+            <p className="font-display text-sm font-semibold tracking-regal text-ivory/90">
+              © {new Date().getFullYear()}{" "}
+              <span className="text-gold-champagne">Sultan Oud Elixir</span>
             </p>
           </div>
         </div>

@@ -110,7 +110,7 @@ export function Catalogo({ perfumes, query, onQueryChange, onAbrirDetalle }: Cat
         <div className="mb-10 space-y-6" data-reveal>
           {/* Marcas — pestañas horizontales */}
           <div className="space-y-3">
-            <p className="eyebrow !justify-start !text-[0.55rem] opacity-70">Casas perfumistas</p>
+            <p className="eyebrow !justify-start !text-[0.62rem] !text-gold/90 !opacity-100">Casas perfumistas</p>
             <div className="hide-scrollbar flex gap-2 overflow-x-auto pb-1">
               <button
                 onClick={() => setMarcaActiva("todas")}

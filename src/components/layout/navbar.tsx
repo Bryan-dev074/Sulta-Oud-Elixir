@@ -117,11 +117,21 @@ export function Navbar({ perfumes, onSeleccionarPerfume }: NavbarProps) {
     <nav
       className={`fixed top-0 left-0 z-50 w-full transition-all duration-500 ${
         scrolled
-          ? "bg-obsidian/80 backdrop-blur-xl border-b border-gold/10 py-3"
-          : "bg-transparent py-6"
+          ? "bg-obsidian/80 backdrop-blur-xl border-b border-gold/10"
+          : "bg-transparent"
       }`}
     >
-      <div className="mx-auto grid max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 md:px-10">
+      {/* Cinta superior — sello de autenticidad (visible SIEMPRE, arriba de todo) */}
+      <div className="flex items-center justify-center border-b border-gold/20 bg-obsidian/85 px-4 py-1.5 backdrop-blur-md">
+        <p className="text-center text-[0.58rem] font-bold uppercase tracking-imperial text-gold drop-shadow-[0_0_10px_rgba(212,175,55,0.55)] md:text-[0.65rem]">
+          ✦ Perfumes 100% originales · Envío a todo el país ✦
+        </p>
+      </div>
+      <div
+        className={`mx-auto grid max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 transition-all duration-500 md:px-10 ${
+          scrolled ? "py-3" : "py-6"
+        }`}
+      >
         {/* Marca — forzada a la esquina izquierda */}
         <button
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}

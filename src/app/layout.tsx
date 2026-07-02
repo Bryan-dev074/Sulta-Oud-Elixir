@@ -27,7 +27,7 @@ const jost = Jost({
 export const metadata: Metadata = {
   title: "Sultan Oud Elixir · Perfumes Árabes de Ultra-Lujo en Paraguay",
   description:
-    "Importación directa de Dubai. La colección más exclusiva de fragancias árabes en Paraguay. Pago al recibir en todo el territorio nacional.",
+    "Importación directa de Dubai. La colección más exclusiva de fragancias árabes en Paraguay. Perfumes 100% originales · Envío a todo el país.",
   keywords: [
     "perfumes árabes",
     "oud",
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Sultan Oud Elixir",
     description:
-      "Importación directa de Dubai · Pago al recibir en todo Paraguay",
+      "Importación directa de Dubai · Perfumes 100% originales · Envío a todo el país",
     type: "website",
     locale: "es_PY",
   },

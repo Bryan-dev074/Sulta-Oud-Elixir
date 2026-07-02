@@ -47,9 +47,9 @@ export function Importacion() {
             },
             {
               icon: <Home className="h-7 w-7" strokeWidth={1} />,
-              titulo: "Pago en puerta",
+              titulo: "Despacho exclusivo",
               texto:
-                "Pagás únicamente al recibir el producto en tu casa. Confianza absoluta, pago al recibir en todo Paraguay.",
+                "Procesamiento inmediato y despacho exclusivo: tu fragancia viaja asegurada y con rastreo directo hasta tu puerta.",
               highlight: true,
             },
           ].map((paso, i) => (
